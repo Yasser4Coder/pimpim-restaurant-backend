@@ -6,6 +6,7 @@ import statusRouts from "./src/routes/Status.routes.js";
 import imagesRoutes from "./src/routes/Images.routes.js";
 import allowedOrgins from "./src/config/allwedOrgins.js";
 import path from "path";
+import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -14,8 +15,15 @@ const DB_URL = process.env.MONGODB_URL;
 
 const app = express();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Serve static files from the React app's build folder
+app.use(express.static(path.join(__dirname, "build")));
+
+// Catch all other routes and return the index.html file
 app.get("*", (req, res) => {
-  res.sendFile(path.resolve(__dirname, "build", "index.html"));
+  res.sendFile(path.join(__dirname, "build", "index.html"));
 });
 
 app.use(
