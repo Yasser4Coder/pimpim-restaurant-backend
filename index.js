@@ -5,6 +5,7 @@ import foodRouts from "./src/routes/FoodServices.routes.js";
 import statusRouts from "./src/routes/Status.routes.js";
 import imagesRoutes from "./src/routes/Images.routes.js";
 import allowedOrgins from "./src/config/allwedOrgins.js";
+import path from "path";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -12,6 +13,10 @@ const PORT = process.env.PORT || 5000; // Default to 5000 if PORT is not set
 const DB_URL = process.env.MONGODB_URL;
 
 const app = express();
+
+app.get("*", (req, res) => {
+  res.sendFile(path.resolve(__dirname, "build", "index.html"));
+});
 
 app.use(
   cors({
