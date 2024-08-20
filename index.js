@@ -9,7 +9,7 @@ import path from "path";
 import dotenv from "dotenv";
 dotenv.config();
 
-const PORT = process.env.PORT || 5000; // Default to 5000 if PORT is not set
+const PORT = process.env.PORT || 5000;
 const DB_URL = process.env.MONGODB_URL;
 
 const app = express();
