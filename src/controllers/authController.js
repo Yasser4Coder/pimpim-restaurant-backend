@@ -16,9 +16,6 @@ exports.login = async (req, res, next) => {
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
-    if (user.status !== "active") {
-      return res.status(403).json({ message: "Account is inactive" });
-    }
     // Create tokens
     const payload = {
       id: user._id,
