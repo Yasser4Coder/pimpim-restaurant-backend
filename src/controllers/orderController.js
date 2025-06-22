@@ -273,3 +273,19 @@ exports.getOrderByOrderNumber = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Get orders assigned to the current delivery guy
+// @route   GET /api/orders/my-orders
+exports.getMyOrders = async (req, res, next) => {
+  try {
+    if (!req.user || req.user.role !== 1001) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+    const orders = await Order.find({ deliveryGuy: req.user.id })
+      .populate("deliveryGuy", "fullName")
+      .sort({ createdAt: -1 });
+    res.status(200).json(orders);
+  } catch (error) {
+    next(error);
+  }
+};

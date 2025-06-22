@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const validateObjectId = require("../middlewares/validateObjectId");
+const auth = require("../middlewares/auth");
 
 const {
   getAllOrders,
@@ -11,6 +12,7 @@ const {
   assignDeliveryGuy,
   getOrdersByStatus,
   getOrderStats,
+  getMyOrders,
 } = require("../controllers/orderController");
 
 // Get all orders
@@ -24,6 +26,9 @@ router.get("/status/:status", getOrdersByStatus);
 
 // Track order by order number (must come before /:id route)
 router.get("/track/:orderNumber", getOrderByOrderNumber);
+
+// Get orders assigned to the current delivery guy
+router.get("/my-orders", auth, getMyOrders);
 
 // Create a new order
 router.post("/", createOrder);
