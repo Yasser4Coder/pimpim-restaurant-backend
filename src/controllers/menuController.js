@@ -102,3 +102,13 @@ exports.deleteMenu = async (req, res, next) => {
     next(error);
   }
 };
+
+// Get menu items count
+exports.getMenuCount = async (req, res, next) => {
+  try {
+    const count = await Menu.countDocuments();
+    res.status(200).json({ count });
+  } catch (error) {
+    next(error);
+  }
+};

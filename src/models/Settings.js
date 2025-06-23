@@ -120,6 +120,11 @@ const settingsSchema = new mongoose.Schema(
         required: true,
         trim: true,
       },
+      supportPhone: {
+        type: String,
+        trim: true,
+        default: "",
+      },
       email: {
         type: String,
         required: true,
@@ -253,6 +258,31 @@ const settingsSchema = new mongoose.Schema(
       type: String,
       default: "en",
     },
+
+    // --- Business Progress Tracking ---
+    cumulativeRevenue: {
+      type: Number,
+      default: 0,
+    },
+    cumulativeOrders: {
+      type: Number,
+      default: 0,
+    },
+    monthlyStats: [
+      {
+        year: Number, // e.g., 2024
+        month: Number, // 1-12
+        revenue: { type: Number, default: 0 },
+        orders: { type: Number, default: 0 },
+      },
+    ],
+    yearlyStats: [
+      {
+        year: Number, // e.g., 2024
+        revenue: { type: Number, default: 0 },
+        orders: { type: Number, default: 0 },
+      },
+    ],
   },
   {
     timestamps: true,
@@ -277,6 +307,7 @@ settingsSchema.statics.getSettings = async function () {
       },
       contact: {
         phone: "+1 (555) 123-4567",
+        supportPhone: "0666554488",
         email: "info@deliciousbites.com",
         website: "www.deliciousbites.com",
         address: "123 Culinary Street, Food District, City 12345",

@@ -87,12 +87,27 @@ const orderSchema = new mongoose.Schema(
 orderSchema.pre("validate", async function (next) {
   if (this.isNew && !this.orderNumber) {
     try {
-      const count = await mongoose.model("Order").countDocuments();
-      // Generate without the '#'
-      this.orderNumber = String(count + 1).padStart(4, "0");
+      // Generate a random 8-character alphanumeric string (uppercase)
+      const randomString = () =>
+        Array.from({ length: 8 }, () => Math.random().toString(36).charAt(2))
+          .join("")
+          .toUpperCase();
+      let unique = false;
+      let orderNum;
+      // Ensure uniqueness
+      while (!unique) {
+        orderNum = randomString();
+        const exists = await mongoose
+          .model("Order")
+          .findOne({ orderNumber: orderNum });
+        if (!exists) unique = true;
+      }
+      this.orderNumber = orderNum;
     } catch (error) {
-      // If there's an error, generate a timestamp-based order number
-      this.orderNumber = Date.now().toString().slice(-4);
+      // Fallback: use timestamp-based random string
+      this.orderNumber = (
+        Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+      ).toUpperCase();
     }
   }
   next();

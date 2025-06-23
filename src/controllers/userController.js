@@ -126,3 +126,13 @@ exports.getMe = async (req, res, next) => {
     next(error);
   }
 };
+
+// Get count of active delivery staff
+exports.getDeliveryStaffCount = async (req, res, next) => {
+  try {
+    const count = await User.countDocuments({ role: 1001, status: "active" });
+    res.status(200).json({ count });
+  } catch (error) {
+    next(error);
+  }
+};

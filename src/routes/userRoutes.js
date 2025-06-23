@@ -9,5 +9,6 @@ router.delete("/:id", auth, userController.deleteUser);
 router.put("/:id", auth, userController.updateUser);
 router.patch("/:id/status", auth, userController.changeUserStatus);
 router.get("/me", auth, userController.getMe);
+router.get("/delivery-count", userController.getDeliveryStaffCount);
 
 module.exports = router;

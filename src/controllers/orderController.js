@@ -123,25 +123,62 @@ exports.updateOrderStatus = async (req, res, next) => {
       });
     }
 
-    const order = await Order.findByIdAndUpdate(
+    const order = await Order.findById(req.params.id);
+    const prevStatus = order.status;
+
+    const updatedOrder = await Order.findByIdAndUpdate(
       req.params.id,
       { status },
       { new: true, runValidators: true }
     ).populate("deliveryGuy", "fullName");
 
-    if (!order) {
+    if (!updatedOrder) {
       return res.status(404).json({ message: "Order not found" });
     }
 
     // If delivered, set delivery guy to active
-    if (status === "Delivered" && order.deliveryGuy) {
-      await User.findByIdAndUpdate(order.deliveryGuy._id, { status: "active" });
+    if (status === "Delivered" && updatedOrder.deliveryGuy) {
+      await User.findByIdAndUpdate(updatedOrder.deliveryGuy._id, {
+        status: "active",
+      });
+    }
+
+    // If status changed to Delivered (and wasn't already Delivered), update stats
+    if (status === "Delivered" && prevStatus !== "Delivered") {
+      const settings = await Settings.findOne();
+      if (settings) {
+        // Update cumulative
+        settings.cumulativeRevenue += updatedOrder.total;
+        settings.cumulativeOrders += 1;
+        // Update monthly
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1; // 1-12
+        let monthStat = settings.monthlyStats.find(
+          (s) => s.year === year && s.month === month
+        );
+        if (!monthStat) {
+          monthStat = { year, month, revenue: 0, orders: 0 };
+          settings.monthlyStats.push(monthStat);
+        }
+        monthStat.revenue += updatedOrder.total;
+        monthStat.orders += 1;
+        // Update yearly
+        let yearStat = settings.yearlyStats.find((s) => s.year === year);
+        if (!yearStat) {
+          yearStat = { year, revenue: 0, orders: 0 };
+          settings.yearlyStats.push(yearStat);
+        }
+        yearStat.revenue += updatedOrder.total;
+        yearStat.orders += 1;
+        await settings.save();
+      }
     }
 
     // Emit socket event for updated order
-    getIO().emit("orderUpdated", order);
+    getIO().emit("orderUpdated", updatedOrder);
 
-    res.status(200).json(order);
+    res.status(200).json(updatedOrder);
   } catch (error) {
     next(error);
   }
@@ -285,6 +322,66 @@ exports.getMyOrders = async (req, res, next) => {
       .populate("deliveryGuy", "fullName")
       .sort({ createdAt: -1 });
     res.status(200).json(orders);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get recent orders (last 4)
+// @route   GET /api/orders/recent
+exports.getRecentOrders = async (req, res, next) => {
+  try {
+    const orders = await Order.find()
+      .populate("deliveryGuy", "fullName")
+      .populate("items.menuItem", "name image")
+      .sort({ createdAt: -1 })
+      .limit(4);
+    res.status(200).json(orders);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get total revenue
+// @route   GET /api/orders/revenue
+exports.getTotalRevenue = async (req, res, next) => {
+  try {
+    const result = await Order.aggregate([
+      { $match: { status: "Delivered" } },
+      { $group: { _id: null, totalRevenue: { $sum: "$total" } } },
+    ]);
+    const totalRevenue = result[0]?.totalRevenue || 0;
+    res.status(200).json({ totalRevenue });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete all orders
+// @route   DELETE /api/orders/all
+exports.deleteAllOrders = async (req, res, next) => {
+  try {
+    await Order.deleteMany({});
+    res.status(200).json({ message: "All orders deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get business progress stats
+// @route   GET /api/orders/progress
+exports.getOrderProgress = async (req, res, next) => {
+  try {
+    const settings = await Settings.findOne();
+    if (!settings) {
+      return res.status(404).json({ message: "Settings not found" });
+    }
+    res.status(200).json({
+      cumulativeRevenue: settings.cumulativeRevenue,
+      cumulativeOrders: settings.cumulativeOrders,
+      monthlyStats: settings.monthlyStats,
+      yearlyStats: settings.yearlyStats,
+    });
   } catch (error) {
     next(error);
   }
