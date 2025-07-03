@@ -88,6 +88,35 @@ exports.createOrder = async (req, res, next) => {
       notes,
     });
 
+    // --- Progress update if created as Delivered ---
+    if (order.status === "Delivered") {
+      const settings = await Settings.findOne();
+      if (settings) {
+        settings.cumulativeRevenue += order.total;
+        settings.cumulativeOrders += 1;
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+        let monthStat = settings.monthlyStats.find(
+          (s) => s.year === year && s.month === month
+        );
+        if (!monthStat) {
+          monthStat = { year, month, revenue: 0, orders: 0 };
+          settings.monthlyStats.push(monthStat);
+        }
+        monthStat.revenue += order.total;
+        monthStat.orders += 1;
+        let yearStat = settings.yearlyStats.find((s) => s.year === year);
+        if (!yearStat) {
+          yearStat = { year, revenue: 0, orders: 0 };
+          settings.yearlyStats.push(yearStat);
+        }
+        yearStat.revenue += order.total;
+        yearStat.orders += 1;
+        await settings.save();
+      }
+    }
+
     const populatedOrder = await Order.findById(order._id).populate(
       "deliveryGuy",
       "fullName"

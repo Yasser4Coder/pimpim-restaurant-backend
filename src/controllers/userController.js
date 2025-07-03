@@ -15,12 +15,6 @@ exports.getAllUsers = async (req, res, next) => {
 // @route   POST /api/users
 exports.addUser = async (req, res, next) => {
   try {
-    // Only admin can create delivery guy
-    if (!req.user || req.user.role !== 1012) {
-      return res
-        .status(403)
-        .json({ message: "Only admin can create delivery guy accounts" });
-    }
     const { fullName, email, password, phone } = req.body;
 
     const existingUser = await User.findOne({ email });
